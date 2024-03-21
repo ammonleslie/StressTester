@@ -118,6 +118,9 @@ namespace StressTester
             // start cpu stress
             await Task.Run(() => CpuStress(10));
 
+            // start storage stress
+            await Task.Run(() => StorageStress(10));
+
             Log("Test has ended!");
         }
         
@@ -132,6 +135,55 @@ namespace StressTester
                     l.Stop();
                 }
             });
+        }
+
+        private void StorageStress(double minutes)
+        {
+            string temp_file_path = "C:\\stress.out";
+            if (!File.Exists(temp_file_path))
+            {
+                File.Create(temp_file_path);
+            }
+
+            var fi = new FileInfo(temp_file_path);
+
+            const int blockSize = 1024 * 8;
+            const int blocksPerMb = (1024 * 1024) / blockSize;
+            byte[] data = new byte[blockSize];
+            Random rng = new Random();
+            using (FileStream stream1 = File.OpenWrite(temp_file_path))
+            {
+                // There 
+                for (int i = 0; i < 1024 * 1 * blocksPerMb; i++)
+                {
+                    rng.NextBytes(data);
+                    stream1.Write(data, 0, data.Length);
+                }
+            }
+
+            var size = fi.Length * 1;
+
+            using var stream = new FileStream(fi.FullName, FileMode.Open);
+            var curRead = 0;
+            var readBuffer = new byte[1024 * 1024];
+            var j = 0;
+            long totalRead = 0;
+
+            var numReads = Math.Floor(size / (double)readBuffer.Length);
+            var reportWait = Math.Floor(numReads / 100);
+
+            while (totalRead < size)
+            {
+                curRead = stream.Read(readBuffer, 0, readBuffer.Length);
+
+                if (curRead < readBuffer.Length)
+                {
+                    stream.Position = 0;
+                }
+                totalRead += curRead;
+
+                j++;
+            }
         }
     }
 }
